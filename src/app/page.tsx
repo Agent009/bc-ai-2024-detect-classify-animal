@@ -42,6 +42,8 @@ export default function Chat() {
 
   const detectAnimals = async (file: File) => {
     setIsProcessing(true);
+    setNeedsNewClassification(false);
+    setClassifying(false);
     setStatus("Detecting animal...");
 
     try {
@@ -238,7 +240,7 @@ export default function Chat() {
                 </div>
               ) : (
                 <>
-                  {state.classification && (
+                  {state.classification && Array.isArray(state.classification) && (
                     <div className="my-2 flex h-3/4 flex-auto flex-col space-y-2 mt-10 text-white text-center">
                       <span className="font-semibold">Classification(s)</span>
                       {state.classification.map(({ name, classification }) => (
@@ -262,7 +264,7 @@ export default function Chat() {
               )}
               {isProcessing && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/50">
-                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <Loader2 className="h-6 w-6 animate-spin" color="white" />
                 </div>
               )}
             </div>

@@ -49,6 +49,7 @@ export const constants = Object.freeze({
       base: "/api/",
       chat: "chat",
       classify: "classify",
+      classifyAgent: "classify-agent",
     },
   },
 });
