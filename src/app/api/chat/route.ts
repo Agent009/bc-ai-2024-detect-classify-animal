@@ -6,7 +6,7 @@ import { constants, initializeOpenAI } from "@lib/index";
 export const maxDuration = 90;
 export const runtime = "edge";
 
-const animalsSchema = jsonSchema<{
+const responseSchema = jsonSchema<{
   animals: string[];
 }>({
   type: "object",
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
           ],
         },
       ],
-      schema: animalsSchema,
+      schema: responseSchema,
     });
     console.log("api -> chat -> route -> POST -> object", object);
 

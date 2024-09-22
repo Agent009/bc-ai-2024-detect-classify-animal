@@ -32,42 +32,13 @@ export default function Chat() {
   const [state, setState] = useState({
     detection: [],
     isDetected: false,
-    classification: "",
+    classification: [],
     isClassified: false,
     maxTokens: constants.openAI.maxTokens,
   });
   const [tabValue, setTabValue] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const animals = state.detection?.join(", ");
-
-  const classifyAnimals = async () => {
-    setStatus("Classifying animals...");
-    setClassifying(true);
-    setNeedsNewClassification(false);
-
-    const classification = await fetch(getApiUrl(constants.routes.api.classify), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ animals: state.detection }),
-    }).then((res) => res.json());
-    console.log("page -> classifyAnimal -> classification", classification.text);
-    setState((prevState) => ({
-      ...prevState,
-      classification: classification.text,
-      isClassified: true,
-    }));
-
-    setClassifying(false);
-
-    if (classification?.error) {
-      setStatus(classification?.error);
-    } else {
-      setStatus("Classification ready.");
-      setTabValue(TAB_CLASSIFY);
-    }
-  };
 
   const detectAnimals = async (file: File) => {
     setIsProcessing(true);
@@ -108,6 +79,37 @@ export default function Chat() {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  };
+
+  const classifyAnimals = async () => {
+    setStatus("Classifying animals...");
+    setClassifying(true);
+    setNeedsNewClassification(false);
+
+    const classification = await fetch(getApiUrl(constants.routes.api.classify), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ animals: state.detection }),
+    }).then((res) => res.json());
+
+    console.log("page -> classifyAnimal -> classification", classification);
+    setClassifying(false);
+
+    if (classification?.error) {
+      setStatus(classification?.error);
+    } else {
+      let data = classification?.classifications || classification || [];
+      data = data || [];
+      setState((prevState) => ({
+        ...prevState,
+        classification: data,
+        isClassified: true,
+      }));
+      setStatus("Classification ready.");
+      setTabValue(TAB_CLASSIFY);
     }
   };
 
@@ -179,7 +181,7 @@ export default function Chat() {
                 </Button>
                 {isProcessing && (
                   <div className="absolute inset-0 flex items-center justify-center bg-background/50">
-                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <Loader2 className="h-6 w-6 animate-spin" color="white" />
                   </div>
                 )}
               </div>
@@ -236,10 +238,26 @@ export default function Chat() {
                 </div>
               ) : (
                 <>
-                  <div className="my-2 flex h-3/4 flex-auto flex-col space-y-2 mt-10 text-white text-center">
-                    <span className="font-semibold">Classification(s)</span>
-                    <span>{state.classification}</span>
-                  </div>
+                  {state.classification && (
+                    <div className="my-2 flex h-3/4 flex-auto flex-col space-y-2 mt-10 text-white text-center">
+                      <span className="font-semibold">Classification(s)</span>
+                      {state.classification.map(({ name, classification }) => (
+                        <span
+                          key={name}
+                          style={{
+                            color:
+                              classification === "Dangerous"
+                                ? "red"
+                                : classification === "Friendly"
+                                  ? "green"
+                                  : "inherit",
+                          }}
+                        >
+                          {name}: {classification}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </>
               )}
               {isProcessing && (

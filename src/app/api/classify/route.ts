@@ -1,10 +1,27 @@
 import { NextResponse } from "next/server";
-import { convertToCoreMessages, generateText } from "ai";
+import { convertToCoreMessages, generateObject, jsonSchema } from "ai";
 import { constants, initializeOpenAI } from "@lib/index";
 
 // Limit streaming responses by x seconds
 export const maxDuration = 90;
 export const runtime = "edge";
+
+const responseSchema = jsonSchema<{
+  classifications: object[];
+}>({
+  type: "object",
+  properties: {
+    classifications: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { name: { type: "string" }, classification: { type: "string" } },
+        required: ["name", "classification"],
+      },
+    },
+  },
+  required: ["classifications"],
+});
 
 const openai = initializeOpenAI();
 
@@ -16,7 +33,7 @@ export async function POST(req: Request) {
     console.log("api -> classify -> route -> POST -> animals", animals);
 
     // Call OpenAI API to classify the detected animal
-    const { text } = await generateText({
+    const { object } = await generateObject({
       model: openai(constants.openAI.models.chat),
       messages: convertToCoreMessages([
         {
@@ -27,10 +44,11 @@ export async function POST(req: Request) {
             Classifications:`,
         },
       ]),
+      schema: responseSchema,
     });
-    console.log("api -> classify -> route -> POST -> text", text);
+    console.log("api -> classify -> route -> POST -> object", object);
 
-    return Response.json({ text });
+    return NextResponse.json({ classifications: object?.classifications });
   } catch (error) {
     console.error("Error in POST handler:", error);
     return NextResponse.json(
