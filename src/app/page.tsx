@@ -89,7 +89,7 @@ export default function Chat() {
     setClassifying(true);
     setNeedsNewClassification(false);
 
-    const classification = await fetch(getApiUrl(constants.routes.api.classify), {
+    const classification = await fetch(getApiUrl(constants.routes.api.classifyAgent), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -221,7 +221,7 @@ export default function Chat() {
               </div>
               <Button
                 variant="contained"
-                disabled={isProcessing || !needsNewClassification || classifying}
+                disabled={isProcessing || !state.isDetected || classifying}
                 onClick={async () => {
                   await classifyAnimals();
                 }}
@@ -233,7 +233,7 @@ export default function Chat() {
                     ? animals.length
                       ? "Classify"
                       : "No animals detected"
-                    : "Classified!"}
+                    : "Classified! Classify Again?"}
               </Button>
             </div>
           </div>

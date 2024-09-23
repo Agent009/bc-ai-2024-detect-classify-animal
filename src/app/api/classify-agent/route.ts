@@ -39,6 +39,7 @@ const openai = initializeOpenAI();
 
 // Function to search Wikipedia for the animal classification
 async function searchWikipedia(animal: string): Promise<string> {
+  console.log("api -> classify -> route -> toolCall -> searchWikipedia -> animal", animal);
   const response = await fetch(
     `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(animal)}&format=json&origin=*`,
   );
@@ -49,6 +50,7 @@ async function searchWikipedia(animal: string): Promise<string> {
 
 // Function to classify the animal based on the Wikipedia result
 function classifyAnimal(result: string): string {
+  console.log("api -> classify -> route -> toolCall -> classifyAnimal -> result", result);
   // Simple classification logic based on keywords in the result
   if (result.includes("dangerous") || result.includes("attack") || result.includes("predator")) {
     return "Dangerous";
@@ -65,10 +67,9 @@ export async function POST(req: Request) {
   try {
     const { animals } = await req.json();
     console.log("api -> classify -> route -> POST -> animals", animals);
-    const animalsForTool = { animals: animals };
 
     // Call OpenAI API to classify the detected animal
-    const { text, toolCalls, toolResults } = await generateText({
+    const { finishReason, responseMessages, text, toolCalls, toolResults, usage, warnings } = await generateText({
       model: openai(constants.openAI.models.chat, { structuredOutputs: true }),
       messages: convertToCoreMessages([
         {
@@ -77,7 +78,7 @@ export async function POST(req: Request) {
         },
         {
           role: "user",
-          content: `Classify the following animals: ${animalsForTool}`,
+          content: `${animals}`,
         },
       ]),
       // schema: responseSchema,
@@ -115,8 +116,16 @@ export async function POST(req: Request) {
       text,
       "toolCalls",
       toolCalls,
+      "finishReason",
+      finishReason,
       "toolResults",
       toolResults,
+      "responseMessages",
+      responseMessages,
+      "usage",
+      usage,
+      "warnings",
+      warnings,
     );
 
     return NextResponse.json({ classifications: text });
