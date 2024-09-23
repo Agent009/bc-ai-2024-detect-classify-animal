@@ -119,6 +119,17 @@ export default function Chat() {
     setTabValue(newValue);
   };
 
+  const getClassificationColor = (classification: string) => {
+    switch (classification) {
+      case "Dangerous":
+        return "text-red-600";
+      case "Friendly":
+        return "text-green-600";
+      default:
+        return "text-gray-600";
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-grow overflow-y-auto p-4 max-w-3xl mx-auto">
@@ -193,7 +204,7 @@ export default function Chat() {
 
         {tabValue === TAB_DETECT && (
           <div className="space-y-6 bg-gradient-to-br from-indigo-900 to-purple-900 rounded-xl p-6 mt-6 shadow-lg">
-            <h3 className="text-2xl font-bold text-center text-white mb-4">Detect Animal</h3>
+            <h3 className="text-2xl font-bold text-center text-white mb-4">Detect Animals</h3>
             <div className="text-center">
               <Button
                 variant="contained"
@@ -205,7 +216,7 @@ export default function Chat() {
                 Try Another Image
               </Button>
               <div className="my-2 flex h-3/4 flex-auto flex-col space-y-2 mt-10 text-white">
-                <span className="font-semibold">Detected Animal</span>
+                <span className="font-semibold">Detected Animal(s)</span>
                 <span>{animals}</span>
               </div>
               <Button
@@ -231,7 +242,7 @@ export default function Chat() {
         {tabValue === TAB_CLASSIFY && (
           <>
             <div className="space-y-6 bg-gradient-to-br from-indigo-900 to-purple-900 rounded-xl p-6 mt-6 shadow-lg">
-              <h3 className="text-2xl font-bold text-center text-white mb-4">Animal Classification</h3>
+              <h3 className="text-2xl font-bold text-center text-white mb-4">Animal Classifications</h3>
               {classifying || needsNewClassification ? (
                 <div className="text-center text-white">
                   {classifying
@@ -241,23 +252,23 @@ export default function Chat() {
               ) : (
                 <>
                   {state.classification && Array.isArray(state.classification) && (
-                    <div className="my-2 flex h-3/4 flex-auto flex-col space-y-2 mt-10 text-white text-center">
-                      <span className="font-semibold">Classification(s)</span>
-                      {state.classification.map(({ name, classification }) => (
-                        <span
-                          key={name}
-                          style={{
-                            color:
-                              classification === "Dangerous"
-                                ? "red"
-                                : classification === "Friendly"
-                                  ? "green"
-                                  : "inherit",
-                          }}
-                        >
-                          {name}: {classification}
-                        </span>
-                      ))}
+                    <div className="my-2 mt-10 text-white text-center">
+                      <table className="w-full">
+                        <thead>
+                          <tr>
+                            <th className="font-semibold">Animal</th>
+                            <th className="font-semibold">Classification</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {state.classification.map(({ name, classification }) => (
+                            <tr key={name}>
+                              <td className={`font-semibold ${getClassificationColor(classification)}`}>{name}</td>
+                              <td className={`ml-2 ${getClassificationColor(classification)}`}>{classification}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   )}
                 </>
