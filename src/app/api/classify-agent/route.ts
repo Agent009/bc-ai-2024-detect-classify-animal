@@ -25,9 +25,9 @@ const responseSchema = jsonSchema<{
       type: "array",
       items: {
         type: "object",
-        properties: { name: { type: "string" }, classification: { type: "string" } },
+        properties: { animal: { type: "string" }, classification: { type: "string" } },
         additionalProperties: false,
-        required: ["name", "classification"],
+        required: ["animal", "classification"],
       },
     },
   },
@@ -69,48 +69,53 @@ export async function POST(req: Request) {
     console.log("api -> classify -> route -> POST -> animals", animals);
 
     // Call OpenAI API to classify the detected animal
-    const { finishReason, responseMessages, text, toolCalls, toolResults, usage, warnings } = await generateText({
-      model: openai(constants.openAI.models.chat, { structuredOutputs: true }),
-      messages: convertToCoreMessages([
-        {
-          role: "system",
-          content: 'For each specified animal, classify it as "Friendly", "Dangerous" or "Unclassified".',
-        },
-        {
-          role: "user",
-          content: `${animals}`,
-        },
-      ]),
-      // schema: responseSchema,
-      tools: {
-        classify: tool({
-          description:
-            "A tool for fetching the animal classification by searching Wikipedia. Should return one of: Friendly, Dangerous, Unclassified. The animals will be provided as an array of one or more items.",
-          parameters: animalsSchema,
-          execute: async ({ animals }) => {
-            const classifications = await Promise.all(
-              animals.map(async (animal) => {
-                const result = await searchWikipedia(animal);
-                return classifyAnimal(result);
-              }),
-            );
-            return { classifications };
+    const { finishReason, responseMessages, text, toolCalls, toolResults, roundtrips, usage, warnings } =
+      await generateText({
+        model: openai(constants.openAI.models.chat, { structuredOutputs: true }),
+        messages: convertToCoreMessages([
+          {
+            role: "system",
+            content: 'For each specified animal, classify it as "Friendly", "Dangerous" or "Unclassified".',
           },
-        }),
-        // answer tool: the LLM will provide a structured answer
-        answer: tool({
-          description: "A tool for providing the final answer. Return the answer in JSON format.",
-          parameters: responseSchema,
-          // no execute function - invoking it will terminate the agent
-        }),
-      },
-      toolChoice: "required",
-      maxToolRoundtrips: 10,
-      // onStepFinish({ text, toolCalls, toolResults, finishReason, usage }) {
-      //   console.log("api -> classify -> route -> POST -> onStepFinish -> text", text, "finishReason", finishReason);
-      //   console.log("toolCalls", toolCalls, "toolResults", toolResults, "usage", usage);
-      // },
-    });
+          {
+            role: "user",
+            content: `${animals}`,
+          },
+        ]),
+        // schema: responseSchema,
+        tools: {
+          classify: tool({
+            description:
+              "A tool for fetching the animal classification by searching Wikipedia. Should return one of: Friendly, Dangerous, Unclassified. The animals will be provided as an array of one or more items.",
+            parameters: animalsSchema,
+            execute: async ({ animals }) => {
+              const classifications = await Promise.all(
+                animals.map(async (animal) => {
+                  const result = await searchWikipedia(animal);
+                  return { animal, classification: classifyAnimal(result) };
+                }),
+              );
+              return { classifications };
+            },
+          }),
+          // answer tool: the LLM will provide a structured answer
+          answer: tool({
+            description: "A tool for providing the final answer. Return the answer in JSON format.",
+            parameters: responseSchema,
+            // no execute function - invoking it will terminate the agent
+            execute: async ({ classifications }) => {
+              return { classifications };
+            },
+          }),
+        },
+        // toolChoice: "required",
+        toolChoice: "auto",
+        maxToolRoundtrips: 10,
+        // onStepFinish({ text, toolCalls, toolResults, finishReason, usage }) {
+        //   console.log("api -> classify -> route -> POST -> onStepFinish -> text", text, "finishReason", finishReason);
+        //   console.log("toolCalls", toolCalls, "toolResults", toolResults, "usage", usage);
+        // },
+      });
     console.log(
       "api -> classify -> route -> POST -> response",
       text,
@@ -122,13 +127,20 @@ export async function POST(req: Request) {
       toolResults,
       "responseMessages",
       responseMessages,
+      "roundtrips",
+      roundtrips,
       "usage",
       usage,
       "warnings",
       warnings,
     );
 
-    return NextResponse.json({ classifications: text });
+    // Extract the classifications from the last tool call (which should be the 'answer' tool)
+    const lastToolCall = toolCalls[toolCalls.length - 1];
+    const classifications = lastToolCall && lastToolCall.toolName === "answer" ? lastToolCall.args.classifications : [];
+
+    // return NextResponse.json({ classifications: text });
+    return NextResponse.json({ classifications });
   } catch (error) {
     console.error("Error in POST handler:", error);
     return NextResponse.json(

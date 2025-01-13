@@ -68,7 +68,7 @@ export function Footer() {
         <div className="flex items-left justify-between">
           <div className="flex items-center ">
             <div className="ml-50 text-[var(--medium-gray)] ">
-              ©Copyright 2024, Connextar Technologies Ltd. All Rights Reserved.
+              ©Copyright {new Date().getFullYear()}, Connextar Technologies Ltd. All Rights Reserved.
             </div>
           </div>
 

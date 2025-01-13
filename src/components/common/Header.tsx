@@ -13,7 +13,7 @@ export function Header() {
         <div className="Header flex justify-between items-center py-8">
           {/* Left Side */}
           <div className="flex items-center">
-            <Link href="/">
+            <Link href="https://connextar.com" target="_blank">
               <Image priority src={CX_Logo_Light} alt="connextar-logo" className="mr-20" width={230} />
             </Link>
           </div>
@@ -22,7 +22,9 @@ export function Header() {
           <div className="flex items-center">
             <div className="flex items-center">
               <div className="px-3 py-2 group/linkedin">
-                <Linkedin_Icon width={26} height={24} className="header-social-icons" />
+                <Link href={"https://www.linkedin.com/company/connextar-technologies-ltd"} target="_blank">
+                  <Linkedin_Icon width={26} height={24} className="header-social-icons" />
+                </Link>
               </div>
             </div>
           </div>
